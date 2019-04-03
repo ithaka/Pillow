@@ -83,7 +83,15 @@ class FpxImageFile(ImageFile.ImageFile):
 
         # size (highest resolution)
 
-        self._size = prop[0x1000002], prop[0x1000003]
+        self.reported_size = prop[0x1000002], prop[0x1000003]
+        temp_size = self.reported_size
+        # normalize size as FPX tiles are always a multiple of 64
+        if temp_size[0] % 64 != 0:
+            temp_size = (64 * (temp_size[0] / 64 + 1), temp_size[1],)
+        if temp_size[1] % 64 != 0:
+            temp_size = (temp_size[0], 64 * (temp_size[1] / 64 + 1), )
+        self._size = temp_size
+
 
         size = max(self.size)
         i = 1
@@ -143,7 +151,7 @@ class FpxImageFile(ImageFile.ImageFile):
         offset = i32(s, 28)
         length = i32(s, 32)
 
-        if size != self.size:
+        if size != self.reported_size:
             raise IOError("subimage mismatch")
 
         # get tile descriptors
