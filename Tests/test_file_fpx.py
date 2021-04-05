@@ -25,15 +25,42 @@ class TestFileFpx(PillowTestCase):
     def test_open_valid_tall_fpx(self):
         valid_file = "Tests/images/tall_example.fpx"
         reloaded = Image.open(valid_file)
-        print(reloaded.tile)
+        print(reloaded.size)
         reloaded.load()
         reloaded.save("/tmp/tall_example.jpg", "JPEG")
 
     def test_open_valid_wide_fpx(self):
         valid_file = "Tests/images/wide_example.fpx"
         reloaded = Image.open(valid_file)
-        data = reloaded.tile[-1]
         print(reloaded.size)
         # reloaded.size=(data[1][2], data[1][3])
         reloaded.load()
         reloaded.save("/tmp/wide_example.jpg", "JPEG")
+
+    def test_open_fill_compressed_fpx(self):
+        valid_file = "Tests/images/fill_encoded.fpx"
+        reloaded = Image.open(valid_file)
+        print(reloaded.size)
+        reloaded.load()
+        reloaded.save("/tmp/fill_encoded.jpg", "JPEG")
+
+    def test_open_failing_compressed_fpx(self):
+        valid_file = "/Users/wgroppe/Downloads/3696186.fpx"
+        reloaded = Image.open(valid_file)
+        print(reloaded.size)
+        reloaded.load()
+        reloaded.save("/tmp/fill_encoded.jpg", "JPEG")
+
+    def test_open_bad_background_color_fpx(self):
+        valid_file = "/Users/wgroppe/Downloads/8754091.fpx"
+        reloaded = Image.open(valid_file)
+        print(reloaded.size)
+        reloaded.load()
+        reloaded.save("/tmp/fill_encoded.jpg", "JPEG")
+
+    def test_open_bad_image_color_fpx(self):
+        valid_file = "/Users/wgroppe/Downloads/20300128.fpx"
+        reloaded = Image.open(valid_file)
+        print(reloaded.size)
+        reloaded.load()
+        reloaded.save("/tmp/fill_encoded.jpg", "JPEG")

@@ -145,9 +145,9 @@ class FpxImageFile(ImageFile.ImageFile):
         s = fp.read(36)
 
         size = i32(s, 4), i32(s, 8)
-        # tilecount = i32(s, 12)
+        tilecount = i32(s, 12)
         tilesize = i32(s, 16), i32(s, 20)
-        # channels = i32(s, 24)
+        channels = i32(s, 24)
         offset = i32(s, 28)
         length = i32(s, 32)
 
@@ -172,30 +172,23 @@ class FpxImageFile(ImageFile.ImageFile):
                                  i32(s, i) + 28, (self.rawmode)))
 
             elif compression == 1:
-
-                # FIXME: the fill decoder is not implemented
+                single_color = bytes(s[i + 12:i + 16])
                 self.tile.append(("fill", (x, y, x+xtile, y+ytile),
-                                 i32(s, i) + 28, (self.rawmode, s[12:16])))
+                                 i32(s, i), (self.rawmode, single_color)))
 
             elif compression == 2:
-
                 internal_color_conversion = i8(s[14])
                 jpeg_tables = i8(s[15])
                 rawmode = self.rawmode
 
-                if internal_color_conversion:
-                    # The image is stored as usual (usually YCbCr).
-                    if rawmode == "RGBA":
-                        # For "RGBA", data is stored as YCbCrA based on
-                        # negative RGB. The following trick works around
-                        # this problem :
-                        jpegmode, rawmode = "YCbCrK", "CMYK"
-                    else:
-                        jpegmode = None  # let the decoder decide
-
+                if internal_color_conversion and rawmode == "RGBA":
+                    # For "RGBA", data is stored as YCbCrA based on
+                    # negative RGB. The following trick works around
+                    # this problem :
+                    jpegmode, rawmode = "YCbCrK", "CMYK"
                 else:
-                    # The image is stored as defined by rawmode
-                    jpegmode = rawmode
+                    # Trust the decoder
+                    jpegmode = None
 
                 self.tile.append(("jpeg", (x, y, x+xtile, y+ytile),
                                  i32(s, i) + 28, (rawmode, jpegmode)))
@@ -205,6 +198,8 @@ class FpxImageFile(ImageFile.ImageFile):
 
                 if jpeg_tables:
                     self.tile_prefix = self.jpeg[jpeg_tables]
+                else:  # Default to the first quant table if it's not specified
+                    self.tile_prefix = self.jpeg[1]
 
             else:
                 raise IOError("unknown/invalid compression")
@@ -226,9 +221,39 @@ class FpxImageFile(ImageFile.ImageFile):
 
         return ImageFile.ImageFile.load(self)
 
+    def load_end(self):
+        # Reset the image size after the decoding so we ignore the padding from the partial tiles.
+        self._size = self.reported_size
+
 #
 # --------------------------------------------------------------------
 
+
+class FillDecoder(ImageFile.PyDecoder):
+    pulls_fd = True
+
+    def __init__(self, mode, *args):
+        super(FillDecoder, self).__init__(mode, *args)
+
+    def is_monochrome(self, im):
+        return im.mode == 'L'
+
+    def decode(self, buffer):
+        bounds = [self.state.xoff, self.state.yoff, self.state.xoff+self.state.xsize, self.state.yoff+self.state.ysize]
+        offset = 0 if self.mode == "RGB" else 1
+        rgb = self.args[1]
+        rouge = i8(rgb[offset])
+        vert = i8(rgb[offset + 1])
+        bleu = i8(rgb[offset + 2])
+        if self.is_monochrome(self.im):
+            self.im.paste((ord(self.args[1][0]),), bounds)
+        else:
+            self.im.paste((rouge, vert, bleu), bounds)
+
+        return len(buffer), 0
+
+
+Image.register_decoder('fill', FillDecoder)
 
 Image.register_open(FpxImageFile.format, FpxImageFile, _accept)
 
