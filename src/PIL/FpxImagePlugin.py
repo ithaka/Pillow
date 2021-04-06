@@ -225,6 +225,26 @@ class FpxImageFile(ImageFile.ImageFile):
         # Reset the image size after the decoding so we ignore the padding from the partial tiles.
         self._size = self.reported_size
 
+    def crop(self, box=None):
+        width = box[2]
+        height = box[3]
+
+        width = min(self.reported_size[0], width)
+        height = min(self.reported_size[1], height)
+        img = ImageFile.ImageFile.crop(self,(box[0],box[1],width,height))
+        return img
+
+    def resize(self, size, resample=0, box=None):
+        height_ratio = float(size[1]) / self.reported_size[1]
+        height_rem = 64 - self.reported_size[1] % 64
+
+        width_ratio = float(size[0]) / self.reported_size[0]
+        width_rem = 64 - self.reported_size[0] % 64
+
+        nsize=(int(size[0]+width_rem*width_ratio), int(size[1]+height_rem*height_ratio))
+        img=ImageFile.ImageFile.resize(self, nsize, resample=resample, box=box)
+        img._size = (size[0], size[1])
+        return img
 #
 # --------------------------------------------------------------------
 
