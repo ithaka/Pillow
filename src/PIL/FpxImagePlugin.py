@@ -95,7 +95,7 @@ class FpxImageFile(ImageFile.ImageFile):
 
         size = max(self.size)
         i = 1
-        while size > 64:
+        while size >= 64:
             size = size / 2
             i += 1
         self.maxid = i - 1
