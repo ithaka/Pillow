@@ -1,0 +1,18 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: Pillow
+  description: Auto-generated catalog-info.yaml.
+  tags:
+  - python
+  - c
+  - html
+  - postscript
+  - shell
+  - cmake
+  - makefile
+  - gnuplot
+spec:
+  type: unknown
+  owner: group:stork
+  lifecycle: unknown
